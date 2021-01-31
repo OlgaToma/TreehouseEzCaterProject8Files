@@ -5,16 +5,15 @@ var Book = require("../models").Book;
 /* GET (show) book list. */
 router.get('/', function(req, res, next) {
   Book.findAll({order: [["createdAt", "DESC"]]}).then(function(books){
-    res.render("books/book-list", {books: books, title: "Books" });
+    res.render("index", {books: books, title: "Books" });
   }).catch(function(error){
-      console.error(error);
-      res.render('error');
+    next(error);
    });
 });
 
 /* GET (show) new book form. */
 router.get("/new", function(req, res, next){
-  res.render("books/book-new", {book: Book.build()}); 
+  res.render("new-book", {book: Book.build()}); 
 });
 
 /* POST (create) new book. */
@@ -23,13 +22,12 @@ router.post("/new", function(req, res, next){
     res.redirect('/books/');
   }).catch(function(error) {
     if(error.name === "SequelizeValidationError") {
-      res.render("books/book-new", {book: Book.build(req.body), errors: error.errors, title: "New Book"})
+      res.render("new-book", {book: Book.build(req.body), errors: error.errors, title: "New Book"})
     } else {
-      throw error;
+      next(error);
     }
   }).catch(function(error){
-    console.error(error);
-    res.render('error');
+    next(error);
   });
 });
 
@@ -37,14 +35,15 @@ router.post("/new", function(req, res, next){
 router.get("/:id", function(req, res, next){
   Book.findByPk(req.params.id).then(function(book){
     if(book) {
-      res.render("books/book-update", {book: book});  
+      res.render("update-book", {book: book});  
     } else {
-      console.error("Couldn't find book with id: " + req.params.id);
-      res.render('books/book-not-found');
+      err = new Error()
+      err.status = 404
+      err.message = "Couldn't find book with id: " + req.params.id;
+      next(err);
     }
   }).catch(function(error){
-      console.error(error);
-      res.render('books/book-not-found');
+    next(error);
    });
 });
 
@@ -54,20 +53,21 @@ router.post("/:id", function(req, res, next){
     if(book) {
       return book.update(req.body);
     } else {
-      console.error("Couldn't find book with id: " + req.body.id);
-      res.render('error');
+      err = new Error()
+      err.status = 404
+      err.message = "Couldn't find book with id: " + req.params.id;
+      next(err);
     }
   }).then(function(book) {
     res.redirect('/books/');
   }).catch(function(error) {
     if(error.name === "SequelizeValidationError") {
-      res.render("books/book-update", {book: Book.build(req.body), errors: error.errors})
+      res.render("update-book", {book: Book.build(req.body), errors: error.errors})
     } else {
-      throw error;
+      next(error);
     }
   }).catch(function(error){
-      console.error(error);
-      res.render('error');
+    next(error);
   });
 });
 
@@ -77,14 +77,15 @@ router.post("/:id/delete", function(req, res, next){
     if(book) {
       return book.destroy();
     } else {
-      console.error("Couldn't find book with id: " + req.params.id);
-      res.render('error');
+      err = new Error()
+      err.status = 404
+      err.message = "Couldn't find book with id: " + req.params.id;
+      next(err);
     }
   }).then(function(){
-    res.redirect("/books");    
+    res.redirect("/books/");    
   }).catch(function(error){
-      console.error(error);
-      res.render('error');
+    next(error);
    });
 });
 
